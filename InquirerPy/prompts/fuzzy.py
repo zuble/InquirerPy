@@ -594,11 +594,10 @@ class FuzzyPrompt(BaseListPrompt):
 				if repo_href:
 					repo_url = f"https://github.com/{repo_href}"
 					urls_to_open.append(repo_url)
-		else:
-			# use the currently highlighted choice
-			current_index = self.content_control.selected_choice_index
-			if 0 <= current_index < len(self.content_control.choices):
-				current_choice = self.content_control.choices[current_index]
+		else: # use the currently highlighted choice
+			current_selected_index = self.content_control.selection["index"]
+			if 0 <= current_selected_index < len(self.content_control.choices):
+				current_choice = self.content_control.choices[current_selected_index]
 				repo_href = current_choice.get("value")
 				if repo_href:
 					repo_url = f"https://github.com/{repo_href}"
@@ -611,9 +610,7 @@ class FuzzyPrompt(BaseListPrompt):
 				# print(f"Opening URL: {repo_url}")
 				subprocess.Popen(["zen-browser", repo_url])
 			except FileNotFoundError:
-				print(
-					f"Error: 'zen-browser' command not found. Please ensure it's installed and in your PATH."
-				)
+				print("Error: 'zen-browser' command not found")
 				break
 			except Exception as e:
 				print(f"Error opening URL '{repo_url}' with zen-browser: {e}")
