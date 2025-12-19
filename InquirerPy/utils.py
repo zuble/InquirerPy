@@ -118,13 +118,14 @@ def get_style(
             "choice_instruction": os.getenv(  ## <<<<<<
                 "INQUIRERPY_STYLE_CHOICE_INSTRUCTION", "grey italic"
             ),
+			"choice_name": os.getenv("INQUIRERPY_STYLE_CHOICE_NAME", ""), ## <<<<<
             "pointer": os.getenv("INQUIRERPY_STYLE_POINTER", "#61afef"),
             "checkbox": os.getenv("INQUIRERPY_STYLE_CHECKBOX", "#98c379"),
             "separator": os.getenv("INQUIRERPY_STYLE_SEPARATOR", ""),
             "skipped": os.getenv("INQUIRERPY_STYLE_SKIPPED", "#5c6370"),
             "validator": os.getenv("INQUIRERPY_STYLE_VALIDATOR", ""),
             "marker": os.getenv("INQUIRERPY_STYLE_MARKER", "#e5c07b"),
-            "fuzzy_entry": os.getenv("INQUIRERPY_STYLE_FUZZY_ENTRY", "grey"),  ## <<<<<
+            "fuzzy_instruction": os.getenv("INQUIRERPY_STYLE_FUZZY_INSTRUCTION", "grey"),  ## <<<<<
             "fuzzy_prompt": os.getenv("INQUIRERPY_STYLE_FUZZY_PROMPT", "#c678dd"),
             "fuzzy_info": os.getenv("INQUIRERPY_STYLE_FUZZY_INFO", "#abb2bf"),
             "fuzzy_border": os.getenv("INQUIRERPY_STYLE_FUZZY_BORDER", "#4b5263"),
@@ -143,16 +144,17 @@ def get_style(
             "answered_question": os.getenv("INQUIRERPY_STYLE_ANSWERED_QUESTION", ""),
             "instruction": os.getenv("INQUIRERPY_STYLE_INSTRUCTION", ""),
             "long_instruction": os.getenv("INQUIRERPY_STYLE_LONG_INSTRUCTION", ""),
-            "choice_instruction": os.getenv(
+            "choice_instruction": os.getenv( ## <<<<<
                 "INQUIRERPY_STYLE_CHOICE_INSTRUCTION", ""
-            ),  ## <<<<<
+            ),
+			"choice_name": os.getenv("INQUIRERPY_STYLE_CHOICE_NAME", ""), ## <<<<<
             "pointer": os.getenv("INQUIRERPY_STYLE_POINTER", ""),
             "checkbox": os.getenv("INQUIRERPY_STYLE_CHECKBOX", ""),
             "separator": os.getenv("INQUIRERPY_STYLE_SEPARATOR", ""),
             "skipped": os.getenv("INQUIRERPY_STYLE_SKIPPED", ""),
             "validator": os.getenv("INQUIRERPY_STYLE_VALIDATOR", ""),
             "marker": os.getenv("INQUIRERPY_STYLE_MARKER", ""),
-            "fuzzy_entry": os.getenv("INQUIRERPY_STYLE_FUZZY_ENTRY", ""),  ## <<<<<<
+            "fuzzy_instruction": os.getenv("INQUIRERPY_STYLE_FUZZY_INSTRUCTION", ""),  ## <<<<<<
             "fuzzy_prompt": os.getenv("INQUIRERPY_STYLE_FUZZY_PROMPT", ""),
             "fuzzy_info": os.getenv("INQUIRERPY_STYLE_FUZZY_INFO", ""),
             "fuzzy_border": os.getenv("INQUIRERPY_STYLE_FUZZY_BORDER", ""),
