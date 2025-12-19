@@ -1,4 +1,5 @@
 """Contains the base class :class:`.BaseSimplePrompt`."""
+
 import os
 import re
 from abc import ABC, abstractmethod
@@ -338,7 +339,7 @@ class BaseSimplePrompt(ABC):
             return result
         return self._filter(result)
 
-    async def execute_async(self) -> Any:
+    async def execute_async(self) -> None:
         """Run the prompt asynchronously and get the result.
 
         Returns:

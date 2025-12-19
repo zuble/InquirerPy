@@ -1,4 +1,5 @@
 """Module contains the class to create a secret prompt."""
+
 from typing import TYPE_CHECKING, Any, Callable, List, Optional, Tuple
 
 from InquirerPy.prompts.input import InputPrompt

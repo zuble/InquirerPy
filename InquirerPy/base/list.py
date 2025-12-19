@@ -1,4 +1,5 @@
 """Contains the base class :class:`.BaseListPrompt` which can be used to create a prompt involving choices."""
+
 from abc import abstractmethod
 from typing import Any, Callable, List, Optional
 
@@ -21,12 +22,12 @@ class BaseListPrompt(BaseComplexPrompt):
     """A base class to create a complex prompt involving choice selections (i.e. list) using `prompt_toolkit` Application.
 
     Note:
-        This class does not create :class:`~prompt_toolkit.layout.Layout` nor :class:`~prompt_toolkit.application.Application`,
-        it only contains the necessary attributes and helper functions to be consumed.
+            This class does not create :class:`~prompt_toolkit.layout.Layout` nor :class:`~prompt_toolkit.application.Application`,
+            it only contains the necessary attributes and helper functions to be consumed.
 
     See Also:
-        :class:`~InquirerPy.prompts.list.ListPrompt`
-        :class:`~InquirerPy.prompts.fuzzy.FuzzyPrompt`
+            :class:`~InquirerPy.prompts.list.ListPrompt`
+            :class:`~InquirerPy.prompts.fuzzy.FuzzyPrompt`
     """
 
     def __init__(
@@ -139,7 +140,7 @@ class BaseListPrompt(BaseComplexPrompt):
         contents for the prompt.
 
         Raises:
-            NotImplementedError: When `self._content_control` is not found.
+                NotImplementedError: When `self._content_control` is not found.
         """
         if not self._content_control:
             raise NotImplementedError
@@ -190,7 +191,7 @@ class BaseListPrompt(BaseComplexPrompt):
         """Handle event when user attempts to move down.
 
         Returns:
-            Boolean indicating if the action hits the cap.
+                Boolean indicating if the action hits the cap.
         """
         if self._cycle:
             self.content_control.selected_choice_index = (
@@ -213,7 +214,7 @@ class BaseListPrompt(BaseComplexPrompt):
         """Handle event when user attempts to move up.
 
         Returns:
-            Boolean indicating if the action hits the cap.
+                Boolean indicating if the action hits the cap.
         """
         if self._cycle:
             self.content_control.selected_choice_index = (

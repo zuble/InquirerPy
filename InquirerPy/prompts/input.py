@@ -1,4 +1,5 @@
 """Module contains the class to create an input prompt."""
+
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Union
 
 from prompt_toolkit.buffer import ValidationState

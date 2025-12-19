@@ -1,4 +1,5 @@
 """Module contains the class to create a fuzzy prompt."""
+
 import asyncio
 import math
 from typing import (
@@ -12,6 +13,7 @@ from typing import (
     Union,
     cast,
 )
+import subprocess  ## <<<<<<<<
 
 from pfzy import fuzzy_match
 from pfzy.score import fzy_scorer, substr_scorer
@@ -38,7 +40,7 @@ from InquirerPy.base.list import BaseListPrompt
 from InquirerPy.containers.instruction import InstructionWindow
 from InquirerPy.containers.message import MessageWindow
 from InquirerPy.containers.validation import ValidationFloat
-from InquirerPy.enum import INQUIRERPY_POINTER_SEQUENCE
+from InquirerPy.enum import *  # INQUIRERPY_POINTER_SEQUENCE
 from InquirerPy.exceptions import InvalidArgument
 from InquirerPy.separator import Separator
 from InquirerPy.utils import (
@@ -112,7 +114,7 @@ class InquirerPyFuzzyControl(InquirerPyUIListControl):
         indices matched char into style class `class:fuzzy_match`.
 
         Returns:
-            FormattedText in list of tuple format.
+                FormattedText in list of tuple format.
         """
         display_choices = []
         display_choices.append(("class:pointer", self._pointer))
@@ -134,6 +136,11 @@ class InquirerPyFuzzyControl(InquirerPyUIListControl):
                     display_choices.append(("class:fuzzy_match", char))
                 else:
                     display_choices.append(("class:pointer", char))
+
+        if "instruction" in choice and choice["instruction"]:
+            display_choices.append(
+                ("class:choice_instruction", " " + choice["instruction"])
+            )
         return display_choices
 
     def _get_normal_text(self, choice) -> List[Tuple[str, str]]:
@@ -145,7 +152,7 @@ class InquirerPyFuzzyControl(InquirerPyUIListControl):
         Calculate spaces of pointer to make the choice equally align.
 
         Returns:
-            FormattedText in list of tuple format.
+                FormattedText in list of tuple format.
         """
         display_choices = []
         display_choices.append(("class:pointer", len(self._pointer) * " "))
@@ -158,14 +165,19 @@ class InquirerPyFuzzyControl(InquirerPyUIListControl):
             )
         )
         if not choice["indices"]:
-            display_choices.append(("", choice["name"]))
+            display_choices.append(("class:fuzzy_entry", choice["name"]))
         else:
             indices = set(choice["indices"])
             for index, char in enumerate(choice["name"]):
                 if index in indices:
                     display_choices.append(("class:fuzzy_match", char))
                 else:
-                    display_choices.append(("", char))
+                    display_choices.append(("class:fuzzy_entry", char))
+
+        if "instruction" in choice and choice["instruction"]:
+            display_choices.append(
+                ("class:choice_instruction", " " + choice["instruction"])
+            )
         return display_choices
 
     def _get_formatted_choices(self) -> List[Tuple[str, str]]:
@@ -176,7 +188,7 @@ class InquirerPyFuzzyControl(InquirerPyUIListControl):
         a list of choice based on current_text.
 
         Returns:
-            FormattedText in list of tuple format.
+                FormattedText in list of tuple format.
         """
         display_choices = []
         if self.choice_count == 0:
@@ -220,23 +232,63 @@ class InquirerPyFuzzyControl(InquirerPyUIListControl):
         """Call to filter choices using fzy fuzzy match.
 
         Args:
-            wait_time: Additional time to wait before filtering the choice.
+                wait_time: Additional time to wait before filtering the choice.
 
         Returns:
-            Filtered choices.
+                Filtered choices.
         """
-        if not self._current_text():
+        if not self._current_text():  # If search buffer is empty
             for choice in self.choices:
-                choice["indices"] = []
+                choice["indices"] = []  # Clear highlighting indices
             choices = self.choices
         else:
             await asyncio.sleep(wait_time)
-            choices = await fuzzy_match(
+            # choices = await fuzzy_match(
+            #     self._current_text(),
+            #     cast(HAYSTACKS, self.choices),
+            #     key="name",
+            #     scorer=self._scorer,
+            # )
+
+            # --- Modification Starts Here ---
+            # Create a temporary list of choices with a combined search field
+            temp_choices_for_search = []
+            for choice in self.choices:
+                temp_choice = choice.copy()  # Copy the original choice dict
+                # Create a temporary field combining 'name' and 'instruction'
+                search_text_parts = [choice.get("name", "")]  # Always include the name
+                if "instruction" in choice and choice["instruction"]:
+                    search_text_parts.append(
+                        choice["instruction"]
+                    )  # Include instruction if present
+                temp_choice["_combined_search_field"] = " ".join(
+                    search_text_parts
+                )  # Concatenate
+                temp_choices_for_search.append(temp_choice)
+
+            filtered_temp_choices = await fuzzy_match(
                 self._current_text(),
-                cast(HAYSTACKS, self.choices),
-                key="name",
+                cast(HAYSTACKS, temp_choices_for_search),
+                key="_combined_search_field",  # Search the combined field
                 scorer=self._scorer,
             )
+
+            # Map the results back to the original choice structure
+            # We need to transfer these back to the original 'choices' dicts
+            # and remove the temporary '_combined_search_field'
+            choices = []
+            for temp_choice in filtered_temp_choices:
+                original_index = temp_choice[
+                    "index"
+                ]  # pfzy should preserve the original index
+                original_choice = self.choices[original_index]
+                # Copy the indices calculated by pfzy based on the combined field
+                original_choice["indices"] = temp_choice.get("indices", [])
+                choices.append(
+                    original_choice
+                )  # Append the original choice (with updated indices)
+            # --- Modification Ends Here ---
+
         return choices
 
     @property
@@ -246,7 +298,7 @@ class InquirerPyFuzzyControl(InquirerPyUIListControl):
         `self.filtered_choice` is the up to date choice displayed.
 
         Returns:
-            A dictionary of name and value for the current pointed choice.
+                A dictionary of name and value for the current pointed choice.
         """
         return self._filtered_choices[self.selected_choice_index]
 
@@ -267,65 +319,65 @@ class FuzzyPrompt(BaseListPrompt):
     due to the input buffer.
 
     Args:
-        message: The question to ask the user.
-            Refer to :ref:`pages/dynamic:message` documentation for more details.
-        choices: List of choices to display and select.
-            Refer to :ref:`pages/dynamic:choices` documentation for more details.
-        style: An :class:`InquirerPyStyle` instance.
-            Refer to :ref:`Style <pages/style:Alternate Syntax>` documentation for more details.
-        vi_mode: Use vim keybinding for the prompt.
-            Refer to :ref:`pages/kb:Keybindings` documentation for more details.
-        default: Set the default value in the search buffer.
-            Different than other list type prompts, the `default` parameter tries to replicate what fzf does and
-            add the value in `default` to search buffer so it starts searching immediatelly.
-            Refer to :ref:`pages/dynamic:default` documentation for more details.
-        qmark: Question mark symbol. Custom symbol that will be displayed infront of the question before its answered.
-        amark: Answer mark symbol. Custom symbol that will be displayed infront of the question after its answered.
-        pointer: Pointer symbol. Customer symbol that will be used to indicate the current choice selection.
-        instruction: Short instruction to display next to the question.
-        long_instruction: Long instructions to display at the bottom of the prompt.
-        validate: Add validation to user input.
-            The main use case for this prompt would be when `multiselect` is True, you can enforce a min/max selection.
-            Refer to :ref:`pages/validator:Validator` documentation for more details.
-        invalid_message: Error message to display when user input is invalid.
-            Refer to :ref:`pages/validator:Validator` documentation for more details.
-        transformer: A function which performs additional transformation on the value that gets printed to the terminal.
-            Different than `filter` parameter, this is only visual effect and won’t affect the actual value returned by :meth:`~InquirerPy.base.simple.BaseSimplePrompt.execute`.
-            Refer to :ref:`pages/dynamic:transformer` documentation for more details.
-        filter: A function which performs additional transformation on the result.
-            This affects the actual value returned by :meth:`~InquirerPy.base.simple.BaseSimplePrompt.execute`.
-            Refer to :ref:`pages/dynamic:filter` documentation for more details.
-        height: Preferred height of the prompt.
-            Refer to :ref:`pages/height:Height` documentation for more details.
-        max_height: Max height of the prompt.
-            Refer to :ref:`pages/height:Height` documentation for more details.
-        multiselect: Enable multi-selection on choices.
-            You can use `validate` parameter to control min/max selections.
-            Setting to True will also change the result from a single value to a list of values.
-        prompt: Input prompt symbol. Custom symbol to display infront of the input buffer to indicate for input.
-        border: Create border around the choice window.
-        info: Display choice information similar to fzf --info=inline next to the prompt.
-        match_exact: Use exact sub-string match instead of using fzy fuzzy match algorithm.
-        exact_symbol: Custom symbol to display in the info section when `info=True`.
-        marker: Marker Symbol. Custom symbol to indicate if a choice is selected.
-            This will take effects when `multiselect` is True.
-        marker_pl: Marker place holder when the choice is not selected.
-            This is empty space by default.
-        keybindings: Customise the builtin keybindings.
-            Refer to :ref:`pages/kb:Keybindings` for more details.
-        cycle: Return to top item if hit bottom during navigation or vice versa.
-        wrap_lines: Soft wrap question lines when question exceeds the terminal width.
-        raise_keyboard_interrupt: Raise the :class:`KeyboardInterrupt` exception when `ctrl-c` is pressed. If false, the result
-            will be `None` and the question is skiped.
-        mandatory: Indicate if the prompt is mandatory. If True, then the question cannot be skipped.
-        mandatory_message: Error message to show when user attempts to skip mandatory prompt.
-        session_result: Used internally for :ref:`index:Classic Syntax (PyInquirer)`.
+            message: The question to ask the user.
+                    Refer to :ref:`pages/dynamic:message` documentation for more details.
+            choices: List of choices to display and select.
+                    Refer to :ref:`pages/dynamic:choices` documentation for more details.
+            style: An :class:`InquirerPyStyle` instance.
+                    Refer to :ref:`Style <pages/style:Alternate Syntax>` documentation for more details.
+            vi_mode: Use vim keybinding for the prompt.
+                    Refer to :ref:`pages/kb:Keybindings` documentation for more details.
+            default: Set the default value in the search buffer.
+                    Different than other list type prompts, the `default` parameter tries to replicate what fzf does and
+                    add the value in `default` to search buffer so it starts searching immediatelly.
+                    Refer to :ref:`pages/dynamic:default` documentation for more details.
+            qmark: Question mark symbol. Custom symbol that will be displayed infront of the question before its answered.
+            amark: Answer mark symbol. Custom symbol that will be displayed infront of the question after its answered.
+            pointer: Pointer symbol. Customer symbol that will be used to indicate the current choice selection.
+            instruction: Short instruction to display next to the question.
+            long_instruction: Long instructions to display at the bottom of the prompt.
+            validate: Add validation to user input.
+                    The main use case for this prompt would be when `multiselect` is True, you can enforce a min/max selection.
+                    Refer to :ref:`pages/validator:Validator` documentation for more details.
+            invalid_message: Error message to display when user input is invalid.
+                    Refer to :ref:`pages/validator:Validator` documentation for more details.
+            transformer: A function which performs additional transformation on the value that gets printed to the terminal.
+                    Different than `filter` parameter, this is only visual effect and won’t affect the actual value returned by :meth:`~InquirerPy.base.simple.BaseSimplePrompt.execute`.
+                    Refer to :ref:`pages/dynamic:transformer` documentation for more details.
+            filter: A function which performs additional transformation on the result.
+                    This affects the actual value returned by :meth:`~InquirerPy.base.simple.BaseSimplePrompt.execute`.
+                    Refer to :ref:`pages/dynamic:filter` documentation for more details.
+            height: Preferred height of the prompt.
+                    Refer to :ref:`pages/height:Height` documentation for more details.
+            max_height: Max height of the prompt.
+                    Refer to :ref:`pages/height:Height` documentation for more details.
+            multiselect: Enable multi-selection on choices.
+                    You can use `validate` parameter to control min/max selections.
+                    Setting to True will also change the result from a single value to a list of values.
+            prompt: Input prompt symbol. Custom symbol to display infront of the input buffer to indicate for input.
+            border: Create border around the choice window.
+            info: Display choice information similar to fzf --info=inline next to the prompt.
+            match_exact: Use exact sub-string match instead of using fzy fuzzy match algorithm.
+            exact_symbol: Custom symbol to display in the info section when `info=True`.
+            marker: Marker Symbol. Custom symbol to indicate if a choice is selected.
+                    This will take effects when `multiselect` is True.
+            marker_pl: Marker place holder when the choice is not selected.
+                    This is empty space by default.
+            keybindings: Customise the builtin keybindings.
+                    Refer to :ref:`pages/kb:Keybindings` for more details.
+            cycle: Return to top item if hit bottom during navigation or vice versa.
+            wrap_lines: Soft wrap question lines when question exceeds the terminal width.
+            raise_keyboard_interrupt: Raise the :class:`KeyboardInterrupt` exception when `ctrl-c` is pressed. If false, the result
+                    will be `None` and the question is skiped.
+            mandatory: Indicate if the prompt is mandatory. If True, then the question cannot be skipped.
+            mandatory_message: Error message to show when user attempts to skip mandatory prompt.
+            session_result: Used internally for :ref:`index:Classic Syntax (PyInquirer)`.
 
     Examples:
-        >>> from InquirerPy import inquirer
-        >>> result = inquirer.fuzzy(message="Select one:", choices=[1, 2, 3]).execute()
-        >>> print(result)
-        1
+            >>> from InquirerPy import inquirer
+            >>> result = inquirer.fuzzy(message="Select one:", choices=[1, 2, 3]).execute()
+            >>> print(result)
+            1
     """
 
     def __init__(
@@ -344,7 +396,7 @@ class FuzzyPrompt(BaseListPrompt):
         long_instruction: str = "",
         multiselect: bool = False,
         prompt: str = INQUIRERPY_POINTER_SEQUENCE,
-        marker: str = INQUIRERPY_POINTER_SEQUENCE,
+        marker: str = INQUIRERPY_POINTER_2,  # <<<<
         marker_pl: str = " ",
         border: bool = False,
         info: bool = True,
@@ -375,6 +427,7 @@ class FuzzyPrompt(BaseListPrompt):
             "down": [{"key": "down"}, {"key": "c-n"}],
             "toggle": [],
             "toggle-exact": [],
+            "open-url": [{"key": "c-o"}],  ## <<<<<<<<
             **keybindings,
         }
         super().__init__(
@@ -399,7 +452,10 @@ class FuzzyPrompt(BaseListPrompt):
             mandatory_message=mandatory_message,
             session_result=session_result,
         )
-        self.kb_func_lookup = {"toggle-exact": [{"func": self._toggle_exact}]}
+        self.kb_func_lookup = {
+            "toggle-exact": [{"func": self._toggle_exact}],
+            "open-url": [{"func": self._handle_open_url}],  ## <<<<<<
+        }
         self._default = (
             default
             if not isinstance(default, Callable)
@@ -501,7 +557,7 @@ class FuzzyPrompt(BaseListPrompt):
         Switch between fzy fuzzy match or sub-string exact match.
 
         Args:
-            value: Specify the value to toggle.
+                value: Specify the value to toggle.
         """
         if value is not None:
             self.content_control._scorer = fzy_scorer if not value else substr_scorer
@@ -511,6 +567,46 @@ class FuzzyPrompt(BaseListPrompt):
                 if self.content_control._scorer == substr_scorer
                 else substr_scorer
             )
+
+    ## <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    def _handle_open_url(self, event) -> None:
+        """Handle the event to open the URL of the currently highlighted choice."""
+        selected_choices = self.selected_choices
+        urls_to_open = []
+        if self._multiselect and selected_choices:
+            for choice in selected_choices:
+                repo_href = choice.get(
+                    "value"
+                )  # Get the 'user/repo' part from the selected choice
+                if repo_href:
+                    repo_url = f"https://github.com/{repo_href}"
+                    urls_to_open.append(repo_url)
+        else:
+            # use the currently highlighted choice
+            current_index = self.content_control.selected_choice_index
+            if 0 <= current_index < len(self.content_control.choices):
+                current_choice = self.content_control.choices[current_index]
+                repo_href = current_choice.get("value")
+                if repo_href:
+                    repo_url = f"https://github.com/{repo_href}"
+                    urls_to_open.append(repo_url)
+            else:
+                print("No valid selection or highlighted choice to open URL for.")
+
+        for repo_url in urls_to_open:
+            try:
+                # print(f"Opening URL: {repo_url}")
+                subprocess.Popen(["zen-browser", repo_url])
+            except FileNotFoundError:
+                print(
+                    f"Error: 'zen-browser' command not found. Please ensure it's installed and in your PATH."
+                )
+                break  # Stop trying to open further URLs if zen-browser is missing
+            except Exception as e:
+                print(f"Error opening URL '{repo_url}' with zen-browser: {e}")
+                # Continue trying to open other URLs even if one fails
+
+    ## <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
     def _on_rendered(self, _) -> None:
         """Render callable choices and set the buffer default text.
@@ -527,7 +623,7 @@ class FuzzyPrompt(BaseListPrompt):
         """Toggle all choice `enabled` status.
 
         Args:
-            value: Specify the value to toggle.
+                value: Specify the value to toggle.
         """
         if not self._multiselect:
             return
@@ -576,7 +672,7 @@ class FuzzyPrompt(BaseListPrompt):
         For digit greater than 6, using formula 2^(digit - 5) * 0.3 to increase the wait_time.
 
         Returns:
-            Desired wait time before running the filter.
+                Desired wait time before running the filter.
         """
         wait_table = {
             2: 0.05,
@@ -604,10 +700,10 @@ class FuzzyPrompt(BaseListPrompt):
 
         1. Run a new filter on all choices.
         2. Re-calculate current selected_choice_index
-            if it exceeds the total filtered_choice.
+                if it exceeds the total filtered_choice.
         3. Avoid selected_choice_index less than zero,
-            this fix the issue of cursor lose when:
-            choice -> empty choice -> choice
+                this fix the issue of cursor lose when:
+                choice -> empty choice -> choice
 
         Don't need to create or check asyncio event loop, `prompt_toolkit`
         application already has a event loop running.

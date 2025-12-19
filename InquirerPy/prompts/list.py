@@ -1,4 +1,5 @@
 """Module contains the class to create a list prompt."""
+
 import shutil
 from typing import TYPE_CHECKING, Any, Callable, List, Optional, Tuple, Union
 

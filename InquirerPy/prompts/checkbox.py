@@ -1,4 +1,5 @@
 """Module contains the class to create a checkbox prompt."""
+
 from typing import Any, Callable, List, Optional, Tuple, Union
 
 from prompt_toolkit.validation import ValidationError

@@ -1,4 +1,5 @@
 """Module contains the class to create a confirm prompt."""
+
 from typing import TYPE_CHECKING, Any, Callable, List, Optional, Tuple
 
 from prompt_toolkit.buffer import ValidationState
