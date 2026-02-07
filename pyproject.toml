@@ -10,10 +10,10 @@ requires-python = ">= 3.11"
 version = "0.3.4"
 
 [build-system]
-# build-backend = "hatchling.build"
-# requires = ["hatchling"]
-requires = ["setuptools>=45", "wheel"]
-build-backend = "setuptools.build_meta"
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+#requires = ["setuptools>=45", "wheel"]
+#build-backend = "setuptools.build_meta"
 
 [tool.pixi.workspace]
 channels = ["conda-forge"]
@@ -31,5 +31,8 @@ authors = { workspace = true }
 [tool.pixi.package.build]
 backend = { name = "pixi-build-python", version = "*" }
 
+[tool.pixi.package.host-dependencies]
+hatchling = "*"
+uv = "*"
 
 [tool.pixi.tasks]
