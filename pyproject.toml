@@ -25,4 +25,7 @@ name = { workspace = true }
 version = { workspace = true }
 authors = { workspace = true }
 
+[tool.pixi.package.build]
+backend = { name = "pixi-build-python", version = "*" }
+
 [tool.pixi.tasks]
