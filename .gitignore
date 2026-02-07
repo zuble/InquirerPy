@@ -138,4 +138,6 @@ dmypy.json
 cython_debug/
 sample.txt
 
-.vscode
+.vscode# pixi environments
+.pixi/*
+!.pixi/config.toml

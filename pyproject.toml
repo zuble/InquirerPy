@@ -71,3 +71,14 @@ exclude_lines = [
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+
+[tool.pixi.project]
+name = "InquirerPy"
+version = "0.3.4"
+channels = ["conda-forge"]
+dependencies = [
+    "python",
+    "prompt-toolkit",
+    "pfzy"
+]
